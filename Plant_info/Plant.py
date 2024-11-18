@@ -2,11 +2,14 @@ class Plant_img:
     #tips = array of tip center coordinates
     #mask image 
     #sources = array of source center coordinates
-    def __init__(self,name,tips,sources,mask,iou,dice,missing_counts, overestimate_counts,gt_sources,gt_tips):
+    skeleton_img = None
+    graph = None
+    def __init__(self,name,tips,sources,gt_mask,pred_mask,iou,dice,missing_counts, overestimate_counts,gt_sources,gt_tips):
         self.name = name
         self.tips = tips
         self.sources = sources
-        self.mask = mask
+        self.gt_mask = gt_mask
+        self.pred_mask = pred_mask
         self.iou = iou
         self.dice = dice
         self.missing_counts = missing_counts
@@ -14,6 +17,23 @@ class Plant_img:
         self.gt_sources = gt_sources
         self.gt_tips = gt_tips
         
+    def get_graph(self):
+        return self.graph
+    def set_graph(self,graph):
+        self.graph = graph
+        
+    def get_skeleton_img(self):
+        return self.skeleton_img
+    def set_skeleton_img(self,skeleton_img):
+        self.skeleton_img = skeleton_img
+    def get_gt_mask(self):
+        return self.gt_mask
+    def get_pred_mask(self):
+        return self.pred_mask
+    def set_gt_mask(self,gt_mask):
+        self.gt_mask = gt_mask
+    def set_pred_mask(self,pred_mask):
+        self.pred_mask = pred_mask
     def get_gt_sources(self):
         return self.gt_sources
     def get_gt_tips(self):

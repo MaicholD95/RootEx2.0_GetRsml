@@ -364,4 +364,4 @@ class Predictor:
         preds = predictor.predict(image)
         iou_scores, dice_scores, distance_scores, missing_counts, overestimate_counts,pred_tips_center, pred_source_center= predictor.visualize(image, preds, masks, img_name, gt_tip_centers, gt_source_centers)
         
-        return Plant_img(img_name, pred_tips_center, pred_source_center, masks['roots'], iou_scores['roots'], dice_scores['roots'], missing_counts['tips'], overestimate_counts['tips'],gt_source_centers,gt_tip_centers)
+        return Plant_img(img_name, pred_tips_center, pred_source_center, masks['roots'],preds['roots'], iou_scores['roots'], dice_scores['roots'], missing_counts['tips'], overestimate_counts['tips'],gt_source_centers,gt_tip_centers)

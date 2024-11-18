@@ -12,11 +12,17 @@ if parent_dir not in sys.path:
 from dataset import CustomRGBDataset
 from post_process_predicted_mask import Predictor
 from Plant_info.Plant import Plant_img
+from Graph.graph import get_pruned_skeleton_graph
+from Skeleton.skeleton import get_skeleton
+from Skeleton.sknw import build_sknw
+from skimage.morphology import skeletonize
+from skimage import io
 
 if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model_path = 'best_models\\best_model_Exp_6_Dice_BCE_W_#1_LR_1e-4_ReduceLROnPlateau_2_Weights_0.5_0.5_8_20.pth'
-    dataset_path = 'test_images'
+    model_path = r'C:\Users\maich\Desktop\rootex3\RootEx3.0_GetRsml\best_models\\best_model_Exp_6_Dice_BCE_W_#1_LR_1e-4_ReduceLROnPlateau_2_Weights_0.5_0.5_8_20.pth'
+    dataset_path = r'C:\Users\maich\Desktop\rootex3\RootEx3.0_GetRsml\test_images'
+    skeletons_saving_path = r'C:\Users\maich\Desktop\rootex3\RootEx3.0_GetRsml\skeletons'
     plant_imgs = []
     # Instantiate Predictor with desired thresholds and parameters
     predictor = Predictor(
@@ -39,7 +45,13 @@ if __name__ == "__main__":
     
     for index in range(len(test_dataset)):
         print(f"\nProcessing image {index+1}/{len(test_dataset)}")
-        plant_imgs.append(predictor.predict_and_visualize(predictor, test_dataset, index))
-    
+        plant_img = predictor.predict_and_visualize( test_dataset, index)
+        skeleton = get_skeleton(plant_img.get_pred_mask()).astype(np.uint8) * 255
+        plant_img.set_skeleton_img(skeleton)
+        cv2.imwrite(f'skeleton_{plant_img.get_name()}.png',skeleton)
+        pruned_skeleton_graph = get_pruned_skeleton_graph(plant_img.get_name(), skeleton,saving_path = skeletons_saving_path)
+        
+        
     print('done')
+
 
