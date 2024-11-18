@@ -16,7 +16,6 @@ class Plant_img:
         self.overestimate_counts = overestimate_counts
         self.gt_sources = gt_sources
         self.gt_tips = gt_tips
-        
     def get_graph(self):
         return self.graph
     def set_graph(self,graph):
