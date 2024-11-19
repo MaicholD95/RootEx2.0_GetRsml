@@ -34,6 +34,10 @@ def visualize_graph(skeleton, graph, plant_name, save_path=None, show_node_types
                 color = (0, 255, 0)  # Green
             elif label == 'intermed':
                 color = (0, 127, 127)  # Teal
+            elif label == 'tip':
+                color = (255, 255, 0)
+            elif label == 'source':
+                color = (255, 0, 255)
             else:
                 color = (0, 0, 255)  # Blue for other node types
 
@@ -68,6 +72,6 @@ def visualize_graph(skeleton, graph, plant_name, save_path=None, show_node_types
 
     if save_path:
         io.imsave(save_path, graph_image)
-        print(f"Graph visualization saved to {save_path}")
+        #print(f"Graph visualization saved to {save_path}")
     
     return graph_image

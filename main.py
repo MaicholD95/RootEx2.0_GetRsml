@@ -19,7 +19,7 @@ from skimage.morphology import skeletonize
 from skimage import io
 import networkx as nx
 #from Graph.skeleton_utils import get_skeleton
-from Graph.graph_processing import get_pruned_skeleton_graph
+from Graph.graph_processing import get_pruned_skeleton_graph,move_points_to_nearest_node
 from Graph.graph_utils import divide_paths_with_equidistant_nodes
 from Graph.visualization import visualize_graph
 if __name__ == "__main__":
@@ -63,13 +63,12 @@ if __name__ == "__main__":
         cv2.imwrite(f'skeleton_{plant_img.get_name()}.png', skeleton)
         
         # Build and prune the skeleton graph, then set it in the plant_img object
-        # The graph is saved to a specified path after pruning
         plant_img.set_graph(get_pruned_skeleton_graph(
             plant_img.get_name(),
             skeleton,
             saving_path=f'{skeletons_saving_path}\\pruned_{plant_img.get_name()}.png'
         ))
-        
+
         # Divide paths in the graph by adding equidistant intermediate nodes every 30 pixels
         plant_graph_with_intermed_nodes = divide_paths_with_equidistant_nodes(
             plant_img.get_graph(), 30
@@ -78,8 +77,8 @@ if __name__ == "__main__":
         # Update the graph in the plant_img object with the new graph containing intermediate nodes
         plant_img.set_graph(plant_graph_with_intermed_nodes)
         
+
         # Visualize the updated graph overlaid on the skeleton image
-        # The visualization is saved to a specified path, and node types are shown
         visualize_graph(
             plant_img.get_skeleton_img(),
             plant_img.get_graph(),
@@ -87,8 +86,45 @@ if __name__ == "__main__":
             save_path=f'{skeletons_saving_path}\\intermed_{plant_img.get_name()}.png',
             show_node_types=True
         )
+        # Move the sources and tips to the nearest node in the graph within a distance threshold of 5 pixels
+        plant_img = move_points_to_nearest_node(plant_img,35,100)
+        
+        visualize_graph(
+            plant_img.get_skeleton_img(),
+            plant_img.get_graph(),
+            plant_img.get_name(),
+            save_path=f'{skeletons_saving_path}\\moved_{plant_img.get_name()}.png',
+            show_node_types=True
+        )
+        
+        #remove every nodes and edge that are not connected to a source 
+        #get all sources
+        sources = plant_img.get_graph_sources()
+        for node in list(plant_img.get_graph().nodes()):
+            found = False
+            for source in sources:
+                if nx.has_path(plant_img.get_graph(),source,node):
+                    found = True
+                    break
+            if not found:
+                plant_img.get_graph().remove_node(node)
         
         
+        # Visualize the updated graph overlaid on the skeleton image
+        visualize_graph(
+            plant_img.get_skeleton_img(),
+            plant_img.get_graph(),
+            plant_img.get_name(),
+            save_path=f'{skeletons_saving_path}\\removed_isolated_{plant_img.get_name()}.png',
+            show_node_types=True
+        )
+        
+        
+        
+        
+        
+        
+            
          
 
 

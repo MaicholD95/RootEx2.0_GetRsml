@@ -540,7 +540,7 @@ def visualize_graph(skeleton, graph, plant_name, save_path=None, show_node_types
 
     if save_path:
         io.imsave(save_path, graph_image)
-        print(f"Graph visualization saved to {save_path}")
+        #print(f"Graph visualization saved to {save_path}")
     
     return graph_image
 

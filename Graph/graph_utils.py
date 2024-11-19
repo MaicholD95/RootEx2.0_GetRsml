@@ -41,13 +41,14 @@ def build_graph_from_skeleton(skeleton):
     for node in external_nodes:
         node_id = node_id_counter
         node_id_counter += 1
-        G.add_node(node_id, label='external', coord=node)
+        G.add_node(node_id, label='external', coord=(node[0], node[1]))  # Ensure (y, x) format
         coord_to_id[node] = node_id
         id_to_coord[node_id] = node
+
     for node in intersection_nodes:
         node_id = node_id_counter
         node_id_counter += 1
-        G.add_node(node_id, label='intersection', coord=node)
+        G.add_node(node_id, label='intersection', coord=(node[0], node[1]))  # Ensure (y, x) format
         coord_to_id[node] = node_id
         id_to_coord[node_id] = node
     
@@ -456,3 +457,49 @@ def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10
         new_graph.remove_edge(u, v, key=key)
 
     return new_graph
+
+def get_nearest_node_in_range(graph, point, radius_min, radius_max):
+    """
+    Given a point and a range of thresholds, find the nearest node of the graph within the range.
+    Use the hierarchy: external > intersection > intermed.
+
+    Args:
+        graph (nx.Graph): The graph containing the nodes.
+        point (tuple): The coordinate (y, x) of the point.
+        radius_min (float): The minimum radius threshold for the search range.
+        radius_max (float): The maximum radius threshold for the search range.
+
+    Returns:
+        node_id (int or None): The ID of the nearest node, or None if no node is found within the range.
+    """
+    # Initialize variables
+    nearest_node = None
+    min_distance = float('inf')
+    hierarchy = {'external':1, 'intersection': 1, 'intermed': 2}
+
+    # Collect nodes within the radius range
+    nodes_within_range = []
+
+    for node_id, data in graph.nodes(data=True):
+        coord = data.get('coord')
+        label = data.get('label', 'other')
+        p_inverted = (int(point[1]), int(point[0]))
+
+        # Calculate the Euclidean distance
+        distance = np.linalg.norm(np.array(coord) - np.array(p_inverted))
+
+        # Check if the distance falls within the specified range
+        if radius_min <= distance <= radius_max:
+            # Append a tuple containing (distance, hierarchy_level, node_id)
+            nodes_within_range.append((distance, hierarchy.get(label, 3), node_id))
+
+    if not nodes_within_range:
+        # No nodes found within range
+        return -1
+
+    # Sort the nodes first by hierarchy level (lower is higher priority), then by distance
+    nodes_within_range.sort(key=lambda x: (x[1], x[0]))
+
+    # Return the node_id of the best candidate
+    nearest_node_id = nodes_within_range[0][2]
+    return nearest_node_id

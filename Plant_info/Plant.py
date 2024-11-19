@@ -16,10 +16,32 @@ class Plant_img:
         self.overestimate_counts = overestimate_counts
         self.gt_sources = gt_sources
         self.gt_tips = gt_tips
+        
     def get_graph(self):
         return self.graph
     def set_graph(self,graph):
         self.graph = graph
+    
+    def get_graph_sources(self):
+        sources = []
+        for node in list(self.graph.nodes()):
+            if self.graph.nodes[node]['label'] == 'source':
+                sources.append(node)
+        return sources
+    def get_graph_tips(self):
+        tips = []
+        for node in list(self.graph.nodes()):
+            if self.graph.nodes[node]['label'] == 'tip':
+                tips.append(node)
+        return tips
+    
+    def modify_node_coord(self,node_id,coord):
+        self.graph.nodes[node_id]['coord'] = coord
+        
+    def get_node(self,node_id):
+        return self.graph.nodes[node_id]
+    def modify_label(self,node_id,label):
+        self.graph.nodes[node_id]['label'] = label
         
     def get_skeleton_img(self):
         return self.skeleton_img
