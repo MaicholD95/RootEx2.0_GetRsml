@@ -75,3 +75,41 @@ def visualize_graph(skeleton, graph, plant_name, save_path=None, show_node_types
         #print(f"Graph visualization saved to {save_path}")
     
     return graph_image
+
+
+def print_graph_on_original_img(plant_img, saving_path):
+    #overlap the graph (with nodes ecc) on the original image
+    #get the original image
+    original_image = io.imread(plant_img.get_image_path())
+    #get the graph
+    graph = plant_img.get_graph()
+    #get the sources
+    sources = plant_img.get_graph_sources()
+    #get the tips
+    tips = plant_img.get_graph_tips()
+    #get the nodes
+    nodes = list(graph.nodes())
+    #get the edges
+    # Disegna gli edge utilizzando i dati del 'path'
+    for u, v, data in graph.edges(data=True):
+        path = data.get('path', [])
+        if path:
+            y_coords = [coord[0] for coord in path]
+            x_coords = [coord[1] for coord in path]
+            for x, y in zip(x_coords, y_coords):
+                cv2.circle(original_image, (int(x),int(y)), 1, (0, 255, 255), -1)
+                
+    #draw the nodes
+    for node in nodes:
+        if node in sources:
+            color = (0,255,0)
+        elif node in tips:
+            color = (255,0,0)
+        else:
+            color = (0,0,255)
+        cv2.circle(original_image,(int(graph.nodes[node]['coord'][1]),int(graph.nodes[node]['coord'][0])),3,color,-1)
+    
+
+
+    #save the image
+    cv2.imwrite(f'{saving_path}\\overlapped_{plant_img.get_name()}.png', original_image)

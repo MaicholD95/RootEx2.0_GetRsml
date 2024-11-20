@@ -111,15 +111,12 @@ def build_graph_from_skeleton(skeleton):
                 skeleton[neighbor] == 1 and neighbor not in all_nodes):
                 if not visited_pixels[neighbor]:
                     path = traverse(node_coord, offset)
+                    # Add edge to graph with full path and length
                     if path and len(path) >= 2:
                         start_node_coord = path[0]
                         end_node_coord = path[-1]
-                        # Calculate the length of the edge
-                        length = 0
-                        for i in range(len(path)-1):
-                            dy_ = path[i+1][0] - path[i][0]
-                            dx_ = path[i+1][1] - path[i][1]
-                            length += np.sqrt(dy_**2 + dx_**2)
+                        # Calculate the length of the edge using the full path
+                        length = sum(np.sqrt((path[i+1][0] - path[i][0])**2 + (path[i+1][1] - path[i][1])**2) for i in range(len(path) - 1))
                         # Add edge to graph
                         start_node_id = coord_to_id[start_node_coord]
                         end_node_id = coord_to_id[end_node_coord]

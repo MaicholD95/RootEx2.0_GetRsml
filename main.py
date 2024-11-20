@@ -21,7 +21,7 @@ import networkx as nx
 #from Graph.skeleton_utils import get_skeleton
 from Graph.graph_processing import get_pruned_skeleton_graph,move_points_to_nearest_node
 from Graph.graph_utils import divide_paths_with_equidistant_nodes
-from Graph.visualization import visualize_graph
+from Graph.visualization import visualize_graph,print_graph_on_original_img
 if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model_path = r'C:\Users\maich\Desktop\rootex3\RootEx3.0_GetRsml\best_models\\best_model_Exp_6_Dice_BCE_W_#1_LR_1e-4_ReduceLROnPlateau_2_Weights_0.5_0.5_8_20.pth'
@@ -52,23 +52,23 @@ if __name__ == "__main__":
         
         # Predict and visualize the segmentation for the current image in the test dataset
         plant_img = predictor.predict_and_visualize(test_dataset, index)
+        plant_img.set_image_path(f'{dataset_path}\\{plant_img.get_name()}')
         
+        ## skeletonization ##
         # Obtain the skeleton from the predicted mask and convert it to an 8-bit unsigned integer image
         skeleton = get_skeleton(plant_img.get_pred_mask()).astype(np.uint8) * 255
-        
         # Set the skeleton image in the plant_img object for further processing or visualization
         plant_img.set_skeleton_img(skeleton)
-        
         # Save the skeleton image with a filename based on the plant image name
         cv2.imwrite(f'skeleton_{plant_img.get_name()}.png', skeleton)
         
+        ### Graph creation and processing ####
         # Build and prune the skeleton graph, then set it in the plant_img object
         plant_img.set_graph(get_pruned_skeleton_graph(
             plant_img.get_name(),
             skeleton,
             saving_path=f'{skeletons_saving_path}\\pruned_{plant_img.get_name()}.png'
         ))
-
         # Divide paths in the graph by adding equidistant intermediate nodes every 30 pixels
         plant_graph_with_intermed_nodes = divide_paths_with_equidistant_nodes(
             plant_img.get_graph(), 30
@@ -76,8 +76,6 @@ if __name__ == "__main__":
         
         # Update the graph in the plant_img object with the new graph containing intermediate nodes
         plant_img.set_graph(plant_graph_with_intermed_nodes)
-        
-
         # Visualize the updated graph overlaid on the skeleton image
         visualize_graph(
             plant_img.get_skeleton_img(),
@@ -88,7 +86,6 @@ if __name__ == "__main__":
         )
         # Move the sources and tips to the nearest node in the graph within a distance threshold of 5 pixels
         plant_img = move_points_to_nearest_node(plant_img,35,100)
-        
         visualize_graph(
             plant_img.get_skeleton_img(),
             plant_img.get_graph(),
@@ -96,9 +93,7 @@ if __name__ == "__main__":
             save_path=f'{skeletons_saving_path}\\moved_{plant_img.get_name()}.png',
             show_node_types=True
         )
-        
         #remove every nodes and edge that are not connected to a source 
-        #get all sources
         sources = plant_img.get_graph_sources()
         for node in list(plant_img.get_graph().nodes()):
             found = False
@@ -108,8 +103,6 @@ if __name__ == "__main__":
                     break
             if not found:
                 plant_img.get_graph().remove_node(node)
-        
-        
         # Visualize the updated graph overlaid on the skeleton image
         visualize_graph(
             plant_img.get_skeleton_img(),
@@ -118,8 +111,7 @@ if __name__ == "__main__":
             save_path=f'{skeletons_saving_path}\\removed_isolated_{plant_img.get_name()}.png',
             show_node_types=True
         )
-        
-        
+        print_graph_on_original_img(plant_img, r'C:\Users\maich\Desktop\rootex3\RootEx3.0_GetRsml\overlapped_graphs')
         
         
         

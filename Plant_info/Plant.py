@@ -4,6 +4,8 @@ class Plant_img:
     #sources = array of source center coordinates
     skeleton_img = None
     graph = None
+    image_path = None
+    
     def __init__(self,name,tips,sources,gt_mask,pred_mask,iou,dice,missing_counts, overestimate_counts,gt_sources,gt_tips):
         self.name = name
         self.tips = tips
@@ -22,6 +24,10 @@ class Plant_img:
     def set_graph(self,graph):
         self.graph = graph
     
+    def get_image_path(self):
+        return self.image_path
+    def set_image_path(self,image_path):
+        self.image_path = image_path
     def get_graph_sources(self):
         sources = []
         for node in list(self.graph.nodes()):
