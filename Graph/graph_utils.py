@@ -334,6 +334,9 @@ def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10
     Returns:
         nx.MultiGraph: The updated graph with 'intermed' nodes added.
     """
+    import numpy as np
+    import networkx as nx
+
     new_graph = graph.copy()
     edges_to_remove = []
 
@@ -344,12 +347,32 @@ def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10
         node_id_counter = 0
 
     # Build mapping from coordinates to node IDs
-    coord_to_id = {data['coord']: node_id for node_id, data in new_graph.nodes(data=True)}
+    coord_to_id = {tuple(data['coord']): node_id for node_id, data in new_graph.nodes(data=True)}
 
     for u, v, key, data in graph.edges(keys=True, data=True):
         path = data.get('path', [])
         if not path or len(path) < 2:
             continue  # Skip if no valid path
+
+        # Get coordinates of nodes u and v
+        u_coord = new_graph.nodes[u]['coord']
+        v_coord = new_graph.nodes[v]['coord']
+
+        # Ensure coordinates are tuples
+        u_coord = tuple(u_coord)
+        v_coord = tuple(v_coord)
+        path_start = tuple(path[0])
+        path_end = tuple(path[-1])
+
+        # Compute distances between path endpoints and node coordinates
+        dist_start_u = np.hypot(u_coord[0] - path_start[0], u_coord[1] - path_start[1])
+        dist_end_v = np.hypot(v_coord[0] - path_end[0], v_coord[1] - path_end[1])
+        dist_start_v = np.hypot(v_coord[0] - path_start[0], v_coord[1] - path_start[1])
+        dist_end_u = np.hypot(u_coord[0] - path_end[0], u_coord[1] - path_end[1])
+
+        # Determine if path needs to be reversed
+        if (dist_start_u + dist_end_v) > (dist_start_v + dist_end_u):
+            path = path[::-1]  # Reverse the path
 
         # Compute cumulative distances along the path
         cumulative_distances = [0.0]
@@ -358,7 +381,7 @@ def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10
             y1, x1 = path[i]
             dy = y1 - y0
             dx = x1 - x0
-            dist = np.sqrt(dy ** 2 + dx ** 2)
+            dist = np.hypot(dx, dy)
             cumulative_distances.append(cumulative_distances[-1] + dist)
 
         total_length = cumulative_distances[-1]
@@ -394,6 +417,7 @@ def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10
                 idx = len(cumulative_distances) - 1
             elif idx == 0:
                 idx = 1  # Avoid idx-1 being -1
+
             # Linear interpolation to find exact position
             d0 = cumulative_distances[idx - 1]
             d1 = cumulative_distances[idx]
@@ -402,6 +426,7 @@ def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10
             y1, x1 = path[idx]
             y_new = y0 + ratio * (y1 - y0)
             x_new = x0 + ratio * (x1 - x0)
+
             # Create a new node at (y_new, x_new)
             node_coord = (int(round(y_new)), int(round(x_new)))
             if node_coord not in coord_to_id:
@@ -411,41 +436,46 @@ def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10
                 coord_to_id[node_coord] = node_id
             else:
                 node_id = coord_to_id[node_coord]
-            new_node_ids.append(node_id)
+            new_node_ids.append((node_id, sd))  # Keep track of distance for sorting
+
+        # Sort the new nodes based on their distance from u
+        new_node_ids.sort(key=lambda x: x[1])
+
+        # Extract just the node IDs in order
+        sorted_new_node_ids = [nid for nid, _ in new_node_ids]
 
         # Remove the original edge
         edges_to_remove.append((u, v, key))
 
         # Build the sequence of nodes: u, new_nodes..., v
-        nodes_sequence = [u] + new_node_ids + [v]
+        nodes_sequence = [u] + sorted_new_node_ids + [v]
 
         # Add edges between the nodes in sequence
         for i in range(len(nodes_sequence) - 1):
             node_a = nodes_sequence[i]
             node_b = nodes_sequence[i + 1]
 
-            # Find the indices in the path corresponding to node_a and node_b
-            if i == 0:
-                idx_a = np.searchsorted(cumulative_distances, 0)
-            else:
-                idx_a = np.searchsorted(cumulative_distances, segment_distances[i - 1])
-            if i + 1 == len(new_node_ids) + 1:
-                idx_b = np.searchsorted(cumulative_distances, total_length)
-            else:
-                idx_b = np.searchsorted(cumulative_distances, segment_distances[i])
+            # Corresponding distances along the path
+            dist_a = 0.0 if i == 0 else new_node_ids[i - 1][1]
+            dist_b = total_length if i == len(sorted_new_node_ids) else new_node_ids[i][1]
+
+            # Find indices in cumulative_distances corresponding to dist_a and dist_b
+            idx_a = np.searchsorted(cumulative_distances, dist_a, side='left')
+            idx_b = np.searchsorted(cumulative_distances, dist_b, side='left')
 
             # Ensure indices are within bounds
             idx_a = min(max(idx_a, 0), len(path) - 1)
             idx_b = min(max(idx_b, 0), len(path) - 1)
 
             # Get the path segment between idx_a and idx_b
-            path_segment = (
-                path[idx_a : idx_b + 1]
-                if idx_a <= idx_b
-                else path[idx_b : idx_a + 1][::-1]
-            )
+            if idx_a <= idx_b:
+                path_segment = path[idx_a: idx_b + 1]
+            else:
+                path_segment = path[idx_b: idx_a + 1][::-1]
+
             # Compute the length of the segment
-            length = cumulative_distances[idx_b] - cumulative_distances[idx_a]
+            length = abs(cumulative_distances[idx_b] - cumulative_distances[idx_a])
+
             # Add edge between node_a and node_b
             new_graph.add_edge(node_a, node_b, weight=length, path=path_segment)
 
@@ -454,6 +484,8 @@ def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10
         new_graph.remove_edge(u, v, key=key)
 
     return new_graph
+
+
 
 def get_nearest_node_in_range(graph, point, radius_min, radius_max):
     """
