@@ -23,7 +23,7 @@ from Pwalking.path_walking import get_all_valids_paths
 from Graph.graph_processing import get_pruned_skeleton_graph,move_points_to_nearest_node
 from Graph.graph_utils import divide_paths_with_equidistant_nodes
 from Graph.visualization import visualize_graph,print_graph_on_original_img
-
+import Path_selection.path_selection as ps  
 if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model_path = r'C:\Users\maich\Desktop\rootex3\RootEx3.0_GetRsml\best_models\\best_model_Exp_6_Dice_BCE_W_#1_LR_1e-4_ReduceLROnPlateau_2_Weights_0.5_0.5_8_20.pth'
@@ -118,12 +118,13 @@ if __name__ == "__main__":
         
         ### path walking ###
         final_paths = []
+        multiple_tips_paths = []
+        final_paths = []
         #First i want all the valid paths
         multiple_tips_paths,final_paths = get_all_valids_paths(plant_img)
-        print("multiple_tips_paths",multiple_tips_paths)
         #need to decide which path to keep
-        
-        
+        img = cv2.imread(plant_img.get_image_path())
+        ps.select_best_paths(img,plant_img.get_graph(),multiple_tips_paths,final_paths,plant_img.get_name())
         
             
          

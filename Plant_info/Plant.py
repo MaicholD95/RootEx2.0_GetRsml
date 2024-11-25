@@ -1,10 +1,9 @@
 class Plant_img:
     #tips = array of tip center coordinates
     #mask image 
-    #sources = array of source center coordinates
-    skeleton_img = None
-    graph = None
-    image_path = None
+    #create an empty object
+    def __init__(self):
+        pass
     
     def __init__(self,name,tips,sources,gt_mask,pred_mask,iou,dice,missing_counts, overestimate_counts,gt_sources,gt_tips):
         self.name = name
@@ -18,6 +17,9 @@ class Plant_img:
         self.overestimate_counts = overestimate_counts
         self.gt_sources = gt_sources
         self.gt_tips = gt_tips
+        self.graph = None
+        self.skeleton_img = None
+        self.image_path = None
         
     def get_graph(self):
         return self.graph
