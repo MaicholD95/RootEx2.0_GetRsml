@@ -117,10 +117,12 @@ if __name__ == "__main__":
         
         
         ### path walking ###
-        
+        final_paths = []
         #First i want all the valid paths
-        valid_paths = get_all_valids_paths(plant_img)
-        break
+        multiple_tips_paths,final_paths = get_all_valids_paths(plant_img)
+        print("multiple_tips_paths",multiple_tips_paths)
+        #need to decide which path to keep
+        
         
         
             

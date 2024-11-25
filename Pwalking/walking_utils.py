@@ -1,4 +1,18 @@
 import math
+import networkx as nx
+
+
+
+
+def get_shortest_path_from_tip_to_sources(graph,sources,tip):
+    paths = []
+    for source in sources:
+        if nx.has_path(graph,tip,source):
+            path = nx.shortest_path(graph,tip,source)
+            paths.append(path)
+    #get the shortest path
+    shortest_path = min(paths,key=len)
+    return shortest_path
 
 #walk to a neighbor node
 def walk_to_neighbor(graph,tip_root_path):
