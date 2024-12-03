@@ -73,7 +73,7 @@ if __name__ == "__main__":
         ))
         # Divide paths in the graph by adding equidistant intermediate nodes every 30 pixels
         plant_graph_with_intermed_nodes = divide_paths_with_equidistant_nodes(
-            plant_img.get_graph(), 30
+            plant_img.get_graph(), 80
         )
         
         # Update the graph in the plant_img object with the new graph containing intermediate nodes
@@ -87,7 +87,7 @@ if __name__ == "__main__":
             show_node_types=True
         )
         # Move the sources and tips to the nearest node in the graph within a distance threshold of 5 pixels
-        plant_img = move_points_to_nearest_node(plant_img,35,100)
+        plant_img = move_points_to_nearest_node(plant_img,60,100)
         visualize_graph(
             plant_img.get_skeleton_img(),
             plant_img.get_graph(),
@@ -126,7 +126,6 @@ if __name__ == "__main__":
         img = cv2.imread(plant_img.get_image_path())
         ps.select_best_paths(img,plant_img.get_graph(),multiple_tips_paths,final_paths,plant_img.get_name())
         
-            
          
 
 

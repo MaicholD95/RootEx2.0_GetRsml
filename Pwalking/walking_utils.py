@@ -23,7 +23,7 @@ def walk_to_neighbor(graph,tip_root_path):
     #remove the nodes that have been visited
     neighbors = [node for node in neighbors if node not in walked_nodes]
     #if the current point y is over the neighbor node + threshold, remove the neighbor node
-    threshold = 5
+    threshold = 10
     #get current node coords
     current_x, current_y = graph.nodes[current_node]['coord'][1], graph.nodes[current_node]['coord'][0]
     neighbors = [node for node in neighbors if graph.nodes[node]['coord'][0] < current_y + threshold]

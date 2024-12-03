@@ -11,6 +11,7 @@ import copy
 from scipy.optimize import linear_sum_assignment
 from DeepLabV3.model import MultiHeadDeeplabV3Plus
 import matplotlib.pyplot as plt
+from PIL import Image
 
 
 class Predictor:
@@ -361,7 +362,12 @@ class Predictor:
         class_names = ['roots', 'tips', 'sources']
         masks = {class_name: masks_array[idx] for idx, class_name in enumerate(class_names)}
 
+        # #save the gt mask
+        # gt_mask = masks['roots']*255
+        # cv2.imwrite(f"gt_masks\\{img_name}_gt_mask.png",gt_mask)
+        
         preds = predictor.predict(image)
         iou_scores, dice_scores, distance_scores, missing_counts, overestimate_counts,pred_tips_center, pred_source_center= predictor.visualize(image, preds, masks, img_name, gt_tip_centers, gt_source_centers)
+        
         
         return Plant_img(img_name, pred_tips_center, pred_source_center, masks['roots'],preds['roots'], iou_scores['roots'], dice_scores['roots'], missing_counts['tips'], overestimate_counts['tips'],gt_source_centers,gt_tip_centers)

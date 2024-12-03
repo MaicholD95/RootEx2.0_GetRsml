@@ -15,6 +15,8 @@ def get_all_valids_paths(plant_img):
 
     #create a dictionary to store the visited nodes foreach tip
     for tip in tips:
+        if tip >=50 and tip <=60:
+            print("tip 52 or 53")
         tip_root_path = TipPathsInfo(tip)
         end = False
         #tip_root_path.add_current_path_node(tip)        

@@ -166,92 +166,218 @@ def prune_external_nodes(graph, min_length=30):
             print("No more external nodes to remove.")
 
     return pruned_graph
-
 def merge_degree_two_intersections(graph):
     """
-    Transform 'intersection' nodes with exactly 2 neighbors into direct edges between their neighbors.
+    Transform 'intersection' nodes with exactly 2 neighbors into direct edges between their neighbors,
+    ensuring no self-loops are created.
+    Also, if a node has more than 2 neighbors but one of them is itself (i.e., it has a self-loop),
+    treat it as having only 2 neighbors (excluding the self-loop), and process it using the same logic.
     """
-    merged = True
-    while merged:
-        merged = False
-        # Identify 'intersection' nodes with degree exactly 2
-        nodes_to_merge = [
-            node for node, data in graph.nodes(data=True)
-            if data.get('label') == 'intersection' and graph.degree(node) == 2
-        ]
+    import numpy as np
+    import networkx as nx  # Ensure networkx is imported
 
-        if not nodes_to_merge:
-            break  # No nodes to merge
+    # Temporarily store and remove self-loops from the graph
+    self_loops = list(nx.selfloop_edges(graph))
+    graph.remove_edges_from(self_loops)
 
-        for node in nodes_to_merge:
+    def align_path(path, start_coord, end_coord):
+        if path[0] == start_coord and path[-1] == end_coord:
+            return path
+        elif path[0] == end_coord and path[-1] == start_coord:
+            return path[::-1]
+        else:
+            # The path doesn't match the expected start and end
+            return None
+
+    merged_any = True
+    while merged_any:
+        merged_any = False
+        # Identify nodes to merge
+        nodes_to_merge = []
+        for node, data in list(graph.nodes(data=True)):
+            if data.get('label') != 'intersection':
+                continue
             neighbors = list(graph.neighbors(node))
-            if len(neighbors) != 2:
-                continue  # Skip if not exactly 2 neighbors
+            # Exclude self-loops from neighbor count
+            neighbors_without_self = [n for n in neighbors if n != node]
+            degree_without_self = len(neighbors_without_self)
+            if degree_without_self == 2:
+                nodes_to_merge.append((node, neighbors_without_self))
+        if not nodes_to_merge:
+            break
+
+        for node_info in nodes_to_merge:
+            node = node_info[0]
+            neighbors = node_info[1]
+            if node not in graph:
+                continue  # Node might have been removed in previous iterations
 
             u, v = neighbors
-            # Get all edges between node and u, and node and v
-            edges_u = list(graph.get_edge_data(node, u, default={}).items())
-            edges_v = list(graph.get_edge_data(node, v, default={}).items())
 
-            # Ensure there's at least one edge between node and u and node and v
-            if not edges_u or not edges_v:
+            if u == v:
+                # Both neighbors are the same node, skip to prevent self-loop
                 continue
 
-            # Take the first available edge between node and u and node and v
-            key_u, data_u = edges_u[0]
-            key_v, data_v = edges_v[0]
+            # Get edge data between node and its neighbors
+            data_u = graph.get_edge_data(node, u)
+            data_v = graph.get_edge_data(node, v)
 
-            path_u = data_u.get('path', [])
-            path_v = data_v.get('path', [])
+            if data_u is None or data_v is None:
+                continue  # Edges might have been removed
 
-            # Avoid merging edges without valid paths
+            # Handle MultiGraph edges
+            if isinstance(graph, nx.MultiGraph):
+                # Assuming we process the first edge
+                key_u, edge_data_u = next(iter(data_u.items()))
+                key_v, edge_data_v = next(iter(data_v.items()))
+            else:
+                edge_data_u = data_u
+                edge_data_v = data_v
+
+            path_u = edge_data_u.get('path', [])
+            path_v = edge_data_v.get('path', [])
+
             if not path_u or not path_v:
-                continue
+                continue  # Cannot proceed without path information
 
-            # Verify path direction
             node_coord = graph.nodes[node]['coord']
             u_coord = graph.nodes[u]['coord']
             v_coord = graph.nodes[v]['coord']
 
-            if path_u[0] == u_coord and path_u[-1] == node_coord:
-                ordered_path_u = path_u
-            elif path_u[0] == node_coord and path_u[-1] == u_coord:
-                ordered_path_u = path_u[::-1]
-            else:
-                continue  # Invalid path
+            # Align paths so they correctly connect at the node
+            aligned_path_u = align_path(path_u, u_coord, node_coord)
+            aligned_path_v = align_path(path_v, node_coord, v_coord)
 
-            if path_v[0] == node_coord and path_v[-1] == v_coord:
-                ordered_path_v = path_v
-            elif path_v[0] == v_coord and path_v[-1] == node_coord:
-                ordered_path_v = path_v[::-1]
-            else:
-                continue  # Invalid path
+            if aligned_path_u is None or aligned_path_v is None:
+                # Cannot align paths, skip merging
+                continue
 
-            # Build the new path including the intermediate node
-            new_path = ordered_path_u[:-1] + [node_coord] + ordered_path_v[1:]
+            # Merge the paths
+            new_path = aligned_path_u + aligned_path_v[1:]
 
             # Calculate the new length
-            length = 0
-            for i in range(len(new_path)-1):
-                dy = new_path[i+1][0] - new_path[i][0]
-                dx = new_path[i+1][1] - new_path[i][1]
-                length += np.sqrt(dy**2 + dx**2)
+            length = sum(
+                np.linalg.norm(np.array(new_path[i+1]) - np.array(new_path[i]))
+                for i in range(len(new_path)-1)
+            )
 
-            # Add the new edge between u and v
-            graph.add_edge(u, v, weight=length, path=new_path)
-
-            # Remove the original edges using the correct keys
-            graph.remove_edge(node, u, key=key_u)
-            graph.remove_edge(node, v, key=key_v)
-
-            # Remove the merged 'intersection' node
+            # Remove the node and its edges
+            if isinstance(graph, nx.MultiGraph):
+                graph.remove_edge(node, u, key=key_u)
+                graph.remove_edge(node, v, key=key_v)
+            else:
+                graph.remove_edge(node, u)
+                graph.remove_edge(node, v)
             graph.remove_node(node)
 
-            merged = True
-            break  # Exit loops to restart
+            # Add new edge between u and v if it's not a self-loop
+            if u != v:
+                if isinstance(graph, nx.MultiGraph):
+                    graph.add_edge(u, v, weight=length, path=new_path)
+                else:
+                    graph.add_edge(u, v, weight=length, path=new_path)
+            else:
+                print(f"Skipping addition of self-loop between node {u}")
+
+            merged_any = True  # Indicate that a merge occurred
+
+            # Since we modified the graph, break and restart the loop
+            break
+
+    # Re-add the self-loops back to the graph
+    graph.add_edges_from(self_loops)
+
+    # Remove any self-loops that might have been introduced during merging
+    graph.remove_edges_from(nx.selfloop_edges(graph))
 
     print("Completed merging of degree-two intersection nodes.")
     return graph
+# def merge_degree_two_intersections(graph):
+#     """
+#     Transform 'intersection' nodes with exactly 2 neighbors into direct edges between their neighbors.
+#     """
+#     merged = True
+#     while merged:
+#         merged = False
+#         # Identify 'intersection' nodes with degree exactly 2
+#         nodes_to_merge = [
+#             node for node, data in graph.nodes(data=True)
+#             if data.get('label') == 'intersection' and graph.degree(node) == 2
+#         ]
+
+#         if not nodes_to_merge:
+#             break  # No nodes to merge
+
+#         for node in nodes_to_merge:
+#             neighbors = list(graph.neighbors(node))
+#             if len(neighbors) != 2:
+#                 continue  # Skip if not exactly 2 neighbors
+
+#             u, v = neighbors
+#             # Get all edges between node and u, and node and v
+#             edges_u = list(graph.get_edge_data(node, u, default={}).items())
+#             edges_v = list(graph.get_edge_data(node, v, default={}).items())
+
+#             # Ensure there's at least one edge between node and u and node and v
+#             if not edges_u or not edges_v:
+#                 continue
+
+#             # Take the first available edge between node and u and node and v
+#             key_u, data_u = edges_u[0]
+#             key_v, data_v = edges_v[0]
+
+#             path_u = data_u.get('path', [])
+#             path_v = data_v.get('path', [])
+
+#             # Avoid merging edges without valid paths
+#             if not path_u or not path_v:
+#                 continue
+
+#             # Verify path direction
+#             node_coord = graph.nodes[node]['coord']
+#             u_coord = graph.nodes[u]['coord']
+#             v_coord = graph.nodes[v]['coord']
+
+#             if path_u[0] == u_coord and path_u[-1] == node_coord:
+#                 ordered_path_u = path_u
+#             elif path_u[0] == node_coord and path_u[-1] == u_coord:
+#                 ordered_path_u = path_u[::-1]
+#             else:
+#                 continue  # Invalid path
+
+#             if path_v[0] == node_coord and path_v[-1] == v_coord:
+#                 ordered_path_v = path_v
+#             elif path_v[0] == v_coord and path_v[-1] == node_coord:
+#                 ordered_path_v = path_v[::-1]
+#             else:
+#                 continue  # Invalid path
+
+#             # Build the new path including the intermediate node
+#             new_path = ordered_path_u[:-1] + [node_coord] + ordered_path_v[1:]
+
+#             # Calculate the new length
+#             length = 0
+#             for i in range(len(new_path)-1):
+#                 dy = new_path[i+1][0] - new_path[i][0]
+#                 dx = new_path[i+1][1] - new_path[i][1]
+#                 length += np.sqrt(dy**2 + dx**2)
+
+#             # Add the new edge between u and v
+#             graph.add_edge(u, v, weight=length, path=new_path)
+
+#             # Remove the original edges using the correct keys
+#             graph.remove_edge(node, u, key=key_u)
+#             graph.remove_edge(node, v, key=key_v)
+
+#             # Remove the merged 'intersection' node
+#             graph.remove_node(node)
+
+#             merged = True
+#             break  # Exit loops to restart
+
+#     print("Completed merging of degree-two intersection nodes.")
+#     return graph
+
 
 def merge_close_nodes(graph, threshold_distance):
     """
@@ -325,6 +451,8 @@ def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10
     For each edge in the graph, divide the path into segments of equal length specified by interval_distance.
     Add new nodes at these points, labeled as 'intermed', and connect them appropriately.
     Ensure that intermediate nodes are not placed within 'node_offset' pixels from the starting and ending nodes.
+    Additionally, add an intermediate node between two intersection nodes or a tip and an intersection node
+    if no intermediate nodes already exist between them. Place this intermediate node in the middle of the path.
 
     Args:
         graph (nx.MultiGraph): The graph to modify.
@@ -386,69 +514,109 @@ def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10
 
         total_length = cumulative_distances[-1]
 
-        # Skip if the path is shorter than the minimum required length
-        if total_length < (2 * node_offset + interval_distance):
-            continue  # Not enough length to place intermediate nodes respecting the offset
-
-        # Define the start and end distances for placing intermediate nodes
-        start_distance = node_offset
-        end_distance = total_length - node_offset
-
-        if start_distance >= end_distance:
-            continue  # Not enough space between offsets to place intermediate nodes
-
-        # Calculate the number of segments within the available length
-        available_length = end_distance - start_distance
-        num_segments = int(available_length // interval_distance)
-
-        if num_segments == 0:
-            continue  # No intermediate nodes can be placed within the available length
-
-        # Determine the distances at which to insert nodes
-        segment_distances = [
-            start_distance + interval_distance * i for i in range(1, num_segments + 1)
-        ]
-
         new_node_ids = []
-        for sd in segment_distances:
-            # Find the index where sd falls in cumulative_distances
-            idx = np.searchsorted(cumulative_distances, sd)
-            if idx >= len(cumulative_distances):
-                idx = len(cumulative_distances) - 1
-            elif idx == 0:
-                idx = 1  # Avoid idx-1 being -1
 
-            # Linear interpolation to find exact position
-            d0 = cumulative_distances[idx - 1]
-            d1 = cumulative_distances[idx]
-            ratio = (sd - d0) / (d1 - d0) if d1 != d0 else 0
-            y0, x0 = path[idx - 1]
-            y1, x1 = path[idx]
-            y_new = y0 + ratio * (y1 - y0)
-            x_new = x0 + ratio * (x1 - x0)
+        # Attempt to add equidistant intermediate nodes
+        if total_length >= (2 * node_offset + interval_distance):
+            # Define the start and end distances for placing intermediate nodes
+            start_distance = node_offset
+            end_distance = total_length - node_offset
 
-            # Create a new node at (y_new, x_new)
-            node_coord = (int(round(y_new)), int(round(x_new)))
-            if node_coord not in coord_to_id:
-                node_id = node_id_counter
-                node_id_counter += 1
-                new_graph.add_node(node_id, label='intermed', coord=node_coord)
-                coord_to_id[node_coord] = node_id
-            else:
-                node_id = coord_to_id[node_coord]
-            new_node_ids.append((node_id, sd))  # Keep track of distance for sorting
+            if start_distance < end_distance:
+                # Calculate the number of segments within the available length
+                available_length = end_distance - start_distance
+                num_segments = int(available_length // interval_distance)
 
-        # Sort the new nodes based on their distance from u
-        new_node_ids.sort(key=lambda x: x[1])
+                if num_segments > 0:
+                    # Determine the distances at which to insert nodes
+                    segment_distances = [
+                        start_distance + interval_distance * i for i in range(1, num_segments + 1)
+                    ]
 
-        # Extract just the node IDs in order
-        sorted_new_node_ids = [nid for nid, _ in new_node_ids]
+                    for sd in segment_distances:
+                        # Find the index where sd falls in cumulative_distances
+                        idx = np.searchsorted(cumulative_distances, sd)
+                        if idx >= len(cumulative_distances):
+                            idx = len(cumulative_distances) - 1
+                        elif idx == 0:
+                            idx = 1  # Avoid idx-1 being -1
+
+                        # Linear interpolation to find exact position
+                        d0 = cumulative_distances[idx - 1]
+                        d1 = cumulative_distances[idx]
+                        ratio = (sd - d0) / (d1 - d0) if d1 != d0 else 0
+                        y0, x0 = path[idx - 1]
+                        y1, x1 = path[idx]
+                        y_new = y0 + ratio * (y1 - y0)
+                        x_new = x0 + ratio * (x1 - x0)
+
+                        # Create a new node at (y_new, x_new)
+                        node_coord = (int(round(y_new)), int(round(x_new)))
+                        if node_coord not in coord_to_id:
+                            node_id = node_id_counter
+                            node_id_counter += 1
+                            new_graph.add_node(node_id, label='intermed', coord=node_coord)
+                            coord_to_id[node_coord] = node_id
+                        else:
+                            node_id = coord_to_id[node_coord]
+                        new_node_ids.append((node_id, sd))  # Keep track of distance for sorting
+
+        # If no intermediate nodes were added, check for adding a midpoint node
+        if not new_node_ids:
+            # Check if u and v are both 'intersection' nodes or one is 'tip' and the other is 'intersection'
+            u_label = new_graph.nodes[u].get('label')
+            v_label = new_graph.nodes[v].get('label')
+
+            if ((u_label == 'intersection' and v_label == 'intersection') or
+                (u_label == 'intersection' and v_label == 'tip') or
+                (u_label == 'tip' and v_label == 'intersection')):
+
+                # Proceed to add an 'intermed' node in the middle of the path
+                midpoint_distance = total_length / 2
+
+                # Find the index where midpoint_distance falls in cumulative_distances
+                idx = np.searchsorted(cumulative_distances, midpoint_distance)
+                if idx >= len(cumulative_distances):
+                    idx = len(cumulative_distances) - 1
+                elif idx == 0:
+                    idx = 1  # Avoid idx-1 being -1
+
+                # Linear interpolation to find exact position
+                d0 = cumulative_distances[idx - 1]
+                d1 = cumulative_distances[idx]
+                ratio = (midpoint_distance - d0) / (d1 - d0) if d1 != d0 else 0
+                y0, x0 = path[idx - 1]
+                y1, x1 = path[idx]
+                y_new = y0 + ratio * (y1 - y0)
+                x_new = x0 + ratio * (x1 - x0)
+
+                # Create a new node at (y_new, x_new)
+                node_coord = (int(round(y_new)), int(round(x_new)))
+                if node_coord not in coord_to_id:
+                    node_id = node_id_counter
+                    node_id_counter += 1
+                    new_graph.add_node(node_id, label='intermed', coord=node_coord)
+                    coord_to_id[node_coord] = node_id
+                else:
+                    node_id = coord_to_id[node_coord]
+
+                # Add this node to the new_node_ids list
+                new_node_ids = [(node_id, midpoint_distance)]
 
         # Remove the original edge
         edges_to_remove.append((u, v, key))
 
         # Build the sequence of nodes: u, new_nodes..., v
-        nodes_sequence = [u] + sorted_new_node_ids + [v]
+        if new_node_ids:
+            # Sort the new nodes based on their distance from u
+            new_node_ids.sort(key=lambda x: x[1])
+
+            # Extract just the node IDs in order
+            sorted_new_node_ids = [nid for nid, _ in new_node_ids]
+            nodes_sequence = [u] + sorted_new_node_ids + [v]
+        else:
+            # No intermediate nodes added, connect u and v directly
+            nodes_sequence = [u, v]
 
         # Add edges between the nodes in sequence
         for i in range(len(nodes_sequence) - 1):
@@ -456,8 +624,15 @@ def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10
             node_b = nodes_sequence[i + 1]
 
             # Corresponding distances along the path
-            dist_a = 0.0 if i == 0 else new_node_ids[i - 1][1]
-            dist_b = total_length if i == len(sorted_new_node_ids) else new_node_ids[i][1]
+            if i == 0:
+                dist_a = 0.0
+            else:
+                dist_a = new_node_ids[i - 1][1]
+
+            if i < len(new_node_ids):
+                dist_b = new_node_ids[i][1]
+            else:
+                dist_b = total_length
 
             # Find indices in cumulative_distances corresponding to dist_a and dist_b
             idx_a = np.searchsorted(cumulative_distances, dist_a, side='left')

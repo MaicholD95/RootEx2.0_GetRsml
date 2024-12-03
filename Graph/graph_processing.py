@@ -21,12 +21,16 @@ def get_pruned_skeleton_graph(img_name="", skeleton=None, saving_path=None):
     merged_graph = merge_degree_two_intersections(pruned_graph)
     # Visualize the pruned and merged graph
     pruned_skeleton_img = visualize_graph(skeleton, merged_graph, plant_name=img_name)
+    visualize_graph(pruned_skeleton_img, graph, plant_name=img_name, show_node_types=True, save_path=saving_path)
+
     pruned_skeleton_img = get_skeleton(pruned_skeleton_img)
     # Build the graph again from the pruned skeleton image
     graph = build_graph_from_skeleton(pruned_skeleton_img)
     # Merge close intersection nodes
-    threshold_distance = 3
+    threshold_distance = 4
     graph = merge_close_nodes(graph, threshold_distance)
+    graph = merge_degree_two_intersections(graph)
+
     # Visualize the final graph
     visualize_graph(pruned_skeleton_img, graph, plant_name=img_name, show_node_types=True, save_path=saving_path)
     return graph

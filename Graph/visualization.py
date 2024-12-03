@@ -25,6 +25,8 @@ def visualize_graph(skeleton, graph, plant_name, save_path=None, show_node_types
         half_size = node_size // 2
 
         for node_id, data in graph.nodes(data=True):
+            if 'coord' not in data:
+                continue
             y, x = data.get('coord')
             label = data.get('label')
             node_id_display = node_id
