@@ -363,8 +363,8 @@ class Predictor:
         masks = {class_name: masks_array[idx] for idx, class_name in enumerate(class_names)}
 
         # #save the gt mask
-        # gt_mask = masks['roots']*255
-        # cv2.imwrite(f"gt_masks\\{img_name}_gt_mask.png",gt_mask)
+        gt_mask = masks['roots']*255
+        cv2.imwrite(f"gt_masks\\{img_name}_gt_mask.png",gt_mask)
         
         preds = predictor.predict(image)
         iou_scores, dice_scores, distance_scores, missing_counts, overestimate_counts,pred_tips_center, pred_source_center= predictor.visualize(image, preds, masks, img_name, gt_tip_centers, gt_source_centers)

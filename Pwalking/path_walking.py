@@ -15,8 +15,6 @@ def get_all_valids_paths(plant_img):
 
     #create a dictionary to store the visited nodes foreach tip
     for tip in tips:
-        if tip >=50 and tip <=60:
-            print("tip 52 or 53")
         tip_root_path = TipPathsInfo(tip)
         end = False
         #tip_root_path.add_current_path_node(tip)        
@@ -28,7 +26,6 @@ def get_all_valids_paths(plant_img):
             neighbors,source_found = wu.walk_to_neighbor(graph,tip_root_path)
             #source found = end of the path
             if len(source_found)>0:
-                print("------ source found ------")
                 added = True
                 tip_root_path.add_current_path_node(source_found[0])
                 final_tip_paths.append(tip_root_path.get_current_path_nodes())
@@ -41,7 +38,6 @@ def get_all_valids_paths(plant_img):
                     tip_root_path = get_first_stashed_path_info(stashed_tip_paths_items)
             else:
                 if len(neighbors) == 0:
-                    print("no neighbors")
                     #if there aren't any stashed paths, return
                     if len(stashed_tip_paths_items) == 0 :
                         end = True
@@ -59,14 +55,10 @@ def get_all_valids_paths(plant_img):
         
         #if the tip has not been added to the final paths, add the shortest path of short path between the tip and every source
         if not added:
-            print("tip_root_path not added")
             shortest_path = wu.get_shortest_path_from_tip_to_sources(graph,sources,tip)
             final_tip_paths.append(shortest_path)
-            print("tip_root_path added")            
         
-        print("tip_root_path.completed_paths")  
     
-    print("got all valid paths")  
     unique_tips_paths = []
     multiple_tips_paths = []
     #count the occurance of every tip in the final paths

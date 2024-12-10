@@ -3,7 +3,7 @@ import random
 import numpy as np
 from collections import defaultdict
 import math
-
+import copy
 # Definizione dell'angolo massimo consentito
 # MAX_ALLOWED_ANGLE_DEG = 45  # Angolo massimo in gradi
 # MAX_ALLOWED_ANGLE_RAD = np.deg2rad(MAX_ALLOWED_ANGLE_DEG)
@@ -141,7 +141,7 @@ def total_cost(G, selected_paths, final_paths_nodes, alpha=1.0, beta=2.0, gamma=
     # Compute total cost
     return alpha * total_iou + beta * total_angle_dev - gamma * total_new_nodes
 
-def optimize_paths(G, final_paths, multiple_tips_paths, alpha=1.0, beta=2.0, gamma=1.0, w_local=0.4, w_global=0.6, initial_temp=1000, final_temp=1, cooling_rate=0.95, max_iter=1000):
+def optimize_paths(G, final_paths, multiple_tips_paths, alpha=1.0, beta=2.0, gamma=1.0, w_local=0.4, w_global=0.6, initial_temp=500, final_temp=0.11, cooling_rate=0.99, max_iter=2500):
     final_paths_nodes = set(node for path in final_paths for node in path)
     tips = list(multiple_tips_paths.keys())
     candidate_paths = [multiple_tips_paths[tip] for tip in tips]
@@ -194,8 +194,9 @@ def optimize_paths(G, final_paths, multiple_tips_paths, alpha=1.0, beta=2.0, gam
         temperature *= cooling_rate
     return best_solution
 
-def select_best_paths(img, graph, valid_paths, final_paths, img_name):
+def select_best_paths(img, graph, valid_paths, valid_final_paths, img_name,alpha,beta,gamma,w_local,w_global):
     base_img = img.copy()
+    final_paths = copy.deepcopy(valid_final_paths)
     for final_p in final_paths:
         color = (random.randint(0, 255), random.randint(0, 255))
         base_img = psu.print_single_path_on_image(base_img, final_p, graph, f'only1_path_root_{img_name}', color)
@@ -206,13 +207,13 @@ def select_best_paths(img, graph, valid_paths, final_paths, img_name):
     # Remove tips with no valid paths
     paths_by_tip = {tip: paths for tip, paths in paths_by_tip.items() if paths}
     if not paths_by_tip:
-        print("No valid paths available.")
+        #print("No valid paths available.")
         return final_paths
-    alpha = 1.0
-    beta = 3.5
-    gamma = 0.8
-    w_local = 0.6
-    w_global = 0.4
+    # alpha = 1.0
+    # beta = 3.5
+    # gamma = 0.8
+    # w_local = 0.6
+    # w_global = 0.4
     best_paths = optimize_paths(graph, final_paths, paths_by_tip, alpha, beta, gamma, w_local, w_global)
     if not best_paths:
         print("No valid paths found after optimization.")
@@ -222,5 +223,5 @@ def select_best_paths(img, graph, valid_paths, final_paths, img_name):
         color = (random.randint(0, 255), random.randint(0, 255))
         img_name_without_ext = img_name.replace('.jpg', '')
         base_img = psu.print_single_path_on_image(base_img, final_p, graph, f'final_paths\\Final_path_root_{img_name_without_ext}_{i}', color)
-    print("Final paths:", final_paths)
+    #print("Final paths:", final_paths)
     return final_paths

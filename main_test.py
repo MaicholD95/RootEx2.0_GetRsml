@@ -85,7 +85,6 @@ def associate_gt_points_to_graph_nodes(graph, root_points, sources, tips, distan
         associated_path = []
         for point in path:
             x, y = point
-            # Nota: Le coordinate devono essere nell'ordine corretto (y, x) per il KD-Tree
             distance, node_idx = tree.query([y, x], distance_upper_bound=distance_threshold)
             if distance != float('inf'):
                 node_id = graph_node_ids[node_idx]
@@ -138,39 +137,6 @@ def calculate_min_distance(path_coords, root_points_tree):
     # Return the minimum distance found
     return distances.min()
 
-def filter_graph_paths_by_root_proximity(graph, root_points, max_distance=50):
-    """
-    Retain only the edges in the graph that are within max_distance of any root point.
-    """
-    # Flatten the list of root points
-    flattened_root_points = [pt for sublist in root_points for pt in zip(sublist[0], sublist[1])]
-    
-    if not flattened_root_points:
-        print("No root points provided.")
-        return graph
-
-    # Create a KD-Tree for efficient nearest neighbor search
-    root_points_tree = cKDTree(flattened_root_points)
-
-    # Collect edges to remove
-    edges_to_remove = []
-    for u, v, data in graph.edges(data=True):
-        path = data.get('path', [])
-        min_dist = calculate_min_distance(path, root_points_tree)
-        if min_dist > max_distance:
-            edges_to_remove.append((u, v))
-    
-    # Remove the edges that are not close to any root point
-    graph.remove_edges_from(edges_to_remove)
-    
-    # Optionally, remove isolated nodes after edge removal
-    isolated_nodes = list(nx.isolates(graph))
-    graph.remove_nodes_from(isolated_nodes)
-
-    print(f"Removed {len(edges_to_remove)} edges not within {max_distance} pixels of any root point.")
-    print(f"Removed {len(isolated_nodes)} isolated nodes.")
-    
-    return graph
 
 def move_points_to_nearest_node(graph,sources,tips,s_distance_threshold=5, t_distance_threshold=5):
 
@@ -305,7 +271,7 @@ if __name__ == "__main__":
         #remove empty nodes from the graph
         graph.remove_nodes_from(list(nx.isolates(graph)))
         # Move the sources and tips to the nearest node in the graph within a distance threshold of 5 pixels
-        graph = move_points_to_nearest_node(graph,gt_source,gt_tip,60,100)
+        graph = move_points_to_nearest_node(graph,gt_source,gt_tip,120,100)
         visualize_graph(
             skeleton,
             graph,
@@ -337,7 +303,7 @@ if __name__ == "__main__":
         #remove empty nodes from the graph
         graph.remove_nodes_from(list(nx.isolates(graph)))
         # **Associazione dei punti di ground truth ai nodi del grafo**
-        associated_paths = associate_gt_points_to_graph_nodes(graph, root_points,sources,tips,distance_threshold=10)
+        associated_paths = associate_gt_points_to_graph_nodes(graph, root_points,sources,tips,distance_threshold=8)
         print(f"Percorsi associati per l'immagine {img_name}: {len(associated_paths)}")
        
         visualize_associated_paths_on_image(
