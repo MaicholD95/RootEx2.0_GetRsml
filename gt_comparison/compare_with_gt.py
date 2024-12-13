@@ -8,8 +8,22 @@ from scipy.spatial.distance import cdist
 import Path_selection.path_selection as ps
 from Pwalking.walking_utils import compare_paths
 
+alphas = [1.7]
+betas = [3.5]
+gammas = [0.5]
+w_locals = [0.5]
+w_globals = [0.5]
+
+# alphas = [1.7]
+# betas = [3.5]
+# gammas = [0.5]
+# w_locals = [0.3]
+# w_globals = [0]
+total_combinations = len(alphas) * len(betas) * len(gammas) * len(w_locals) * len(w_globals)
+print(f"Total parameter combinations to evaluate: {total_combinations}")
+    
 def compare_with_gt(test_dataset, gt_graph_paths, final_paths_folder,index, plant_img, multiple_tips_paths, 
-                    valid_final_paths, alphas, betas, gammas, w_locals, w_globals, parameter_results, parameter_node_scores, total_combinations):
+                    valid_final_paths,parameter_results, parameter_node_scores):
     # Read the current GT JSON file
     with open(gt_graph_paths[index], 'r') as json_file:
         data = json.load(json_file)
@@ -134,16 +148,15 @@ def compare_with_gt(test_dataset, gt_graph_paths, final_paths_folder,index, plan
         parameter_results[param_key].append(avg_distance)
         parameter_node_scores[param_key].append(avg_node_score)
 
-        print(f"\nFinished processing image {index+1}/{len(test_dataset)}")
+        print(f"\n Finished processing image {index+1}/{len(test_dataset)}",end='\r', flush=True)
 
 
-        save_results(results, final_paths_folder, plant_img,final_paths_folder)
+        #save_results(results, final_paths_folder, plant_img,final_paths_folder)
         
-    return parameter_results, parameter_node_scores
+    return parameter_results, parameter_node_scores,final_paths
         
     
 
-    print('\nDone')
     
     
 def compute_metrics(parameter_results, parameter_node_scores):
