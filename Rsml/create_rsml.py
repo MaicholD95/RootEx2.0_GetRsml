@@ -99,7 +99,7 @@ def create_rsml_from_nx(graph, metadata,final_paths,out_path):
                     polyline = ET.SubElement(geometry, 'polyline')
                     
                     points = []
-                    for i in range(0,len(final_paths[el])-1):
+                    for i in range(0,len(final_paths[el])):
                         points.append((final_paths[el][i][0],final_paths[el][i][1]))
                         #points.append((graph.nodes[node]['pos'][0],-1*graph.nodes[node]['pos'][1]))
                         

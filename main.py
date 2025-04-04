@@ -55,8 +55,8 @@ if __name__ == "__main__":
         device=device,
         resize_height=1400,
         resize_width=1400,
-        root_threshold=0.5,
-        tip_threshold=0.7,
+        root_threshold=0.6,
+        tip_threshold=0.63,
         source_threshold=0.3,
         sigma=15,
         area_threshold=320,
@@ -76,7 +76,8 @@ if __name__ == "__main__":
 
     for index in range(len(test_dataset)):
         print(f"\nProcessing image {index+1}/{len(test_dataset)}")
-
+        #print image name
+        print(test_dataset.data[index][0]['root']['name'])
         # Predict and visualize the segmentation for the current image in the test dataset
         plant_img = predictor.predict_and_visualize(test_dataset, index)
 
@@ -105,7 +106,7 @@ if __name__ == "__main__":
             save_path=f'{skeletons_saving_path}\\intermed_{plant_img.get_name()}.png',
             show_node_types=True
         )
-        plant_img = move_points_to_nearest_node(plant_img, 250, 100)
+        plant_img = move_points_to_nearest_node(plant_img, 150, 100)
         visualize_graph(
             plant_img.get_skeleton_img(),
             plant_img.get_graph(),
@@ -143,6 +144,7 @@ if __name__ == "__main__":
                         parameter_results,parameter_node_scores)
         final_paths_imgs.append(final_paths)
         
+        
         #Save RSMLs
         #trasform the final_paths to the final_paths_coords
         final_paths_coords = [[] for i in range(len(final_paths))]
@@ -157,10 +159,10 @@ if __name__ == "__main__":
         create_RSML(plant_img.get_name(),final_paths_coords,plant_img.get_graph(),rsml_output_folder)
         print(f"RSML created for image {index+1}/{len(test_dataset)}")
         
+        
     print("Results:")
     print(parameter_results)
     print(parameter_node_scores)
-    
     compute_metrics(parameter_results,parameter_node_scores)
         
         

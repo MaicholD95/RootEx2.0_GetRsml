@@ -446,7 +446,7 @@ def merge_close_nodes(graph, threshold_distance):
     print("Completed merging of close intersection nodes.")
     return fused_graph
 
-def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10):
+def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=15):
     """
     For each edge in the graph, divide the path into segments of equal length specified by interval_distance.
     Add new nodes at these points, labeled as 'intermed', and connect them appropriately.
@@ -475,11 +475,11 @@ def divide_paths_with_equidistant_nodes(graph, interval_distance, node_offset=10
         node_id_counter = 0
 
 
-    #check for {} nodes
-    for node_id, data in new_graph.nodes(data=True):
-        if not data:
-            print(f"Node {node_id} has no data")
-            new_graph.remove_node(node_id)
+    nodes_to_remove = [node_id for node_id, data in new_graph.nodes(data=True) if not data]
+
+    for node_id in nodes_to_remove:
+        print(f"Node {node_id} has no data")
+        new_graph.remove_node(node_id)
             
     # Build mapping from coordinates to node IDs
     coord_to_id = {tuple(data['coord']): node_id for node_id, data in new_graph.nodes(data=True)}

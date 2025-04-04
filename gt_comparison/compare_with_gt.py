@@ -8,17 +8,17 @@ from scipy.spatial.distance import cdist
 import Path_selection.path_selection as ps
 from Pwalking.walking_utils import compare_paths
 
-alphas = [1.7]
-betas = [3.5]
-gammas = [0.5]
-w_locals = [0.5]
+alphas = [3]
+betas = [4]
+gammas = [0.5,0.7]
+w_locals = [0.5,0.7]
 w_globals = [0.5]
 
-# alphas = [1.7]
-# betas = [3.5]
-# gammas = [0.5]
-# w_locals = [0.3]
-# w_globals = [0]
+# alphas = [3]
+# betas = [3]
+# gammas = [2]
+# w_locals = [0.5]
+# w_globals = [0.5]
 total_combinations = len(alphas) * len(betas) * len(gammas) * len(w_locals) * len(w_globals)
 print(f"Total parameter combinations to evaluate: {total_combinations}")
     
@@ -151,7 +151,7 @@ def compare_with_gt(test_dataset, gt_graph_paths, final_paths_folder,index, plan
         print(f"\n Finished processing image {index+1}/{len(test_dataset)}",end='\r', flush=True)
 
 
-        #save_results(results, final_paths_folder, plant_img,final_paths_folder)
+        save_results(results, final_paths_folder, plant_img,final_paths_folder)
         
     return parameter_results, parameter_node_scores,final_paths
         
