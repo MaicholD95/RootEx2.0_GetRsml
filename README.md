@@ -157,7 +157,39 @@ If GT is **not** present, the run still produces final paths and RSML, just with
 `main.py` seeds Python, NumPy, and PyTorch; it sets deterministic CuDNN and disables benchmarking to reduce run-to-run variance.
 
 ---
+## 🔗 Upstream Deep Model (Training & Inference)
 
+The **pre–post-processing stage** (data prep, training, and raw model inference that produces the multi-head masks) is documented here:
+
+- **RootEx 2.0 — DeepLabV3+ (multi-head)**: https://github.com/MaicholD95/RootEx2.0_DeeplabV3Plus
+
+That repository provides:
+- Model/backbone details and checkpoints (`.pth`)
+- Dataset setup and resizing strategy
+- Inference thresholds and heatmap/peak parameters (`root_threshold`, `tip_threshold`, `source_threshold`, `sigma`, `area_threshold`, `circle_radius`, `spacing_radius`)
+- Baseline metrics for segmentation and keypoint detection
+
+> Use that repo to produce the model `.pth` and (optionally) predicted masks; then run **this** repo for graph building, path extraction, GT-optional evaluation, and RSML export. 
+
+---
+
+## 🚀 End-to-End Quickstart
+
+1) **Train or obtain a checkpoint** (`.pth`) using the upstream repo above.  
+2) **Place/point** `model_path` in this repo’s `main.py`.  
+3) **Prepare test data**: images + per-image JSON in `dataset_path`.  
+4) (Optional) **Add GT graphs** in `gt_graph_folder_path` to enable metrics.  
+5) Run:
+```bash
+python main.py
+```
+6) Inspect outputs in:
+```
+skeletons_saving_path/
+overlapped_graphs_path/
+final_paths_folder/
+rsml_output_folder/
+```
 
 ## 📚 Citation
 
