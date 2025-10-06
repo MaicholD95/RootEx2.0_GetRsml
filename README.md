@@ -29,6 +29,10 @@ Install the basics (adapt to your environment):
 ```bash
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121  # or cpu
 pip install numpy opencv-python networkx matplotlib
+```
+
+> If your project has a dedicated `requirements.txt` or `environment.yml`, prefer that.
+
 ---
 
 ## 🗂️ Project Layout (post-DL bits)
@@ -52,7 +56,6 @@ pip install numpy opencv-python networkx matplotlib
 │  └─ create_rsml.py               # RSML writer
 └─ ...
 ```
-
 ---
 
 ## ⚙️ Configuration
