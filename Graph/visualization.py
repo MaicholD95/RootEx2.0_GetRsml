@@ -21,7 +21,7 @@ def visualize_graph(skeleton, graph, plant_name, save_path=None, show_node_types
 
     if show_node_types:
         # Draw nodes with size 3x3 pixels and show node ID
-        node_size = 3  # Node size
+        node_size = 7  # Node size
         half_size = node_size // 2
 
         for node_id, data in graph.nodes(data=True):
@@ -53,7 +53,7 @@ def visualize_graph(skeleton, graph, plant_name, save_path=None, show_node_types
             cv2.rectangle(graph_image, (x_min, y_min), (x_max, y_max), color, thickness=-1)
 
             # Draw the node ID
-            font_scale = 0.3
+            font_scale = 0.6
             font_thickness = 1
             text = str(node_id_display)
             text_size, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)

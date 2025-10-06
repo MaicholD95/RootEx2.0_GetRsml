@@ -8,11 +8,11 @@ from scipy.spatial.distance import cdist
 import Path_selection.path_selection as ps
 from Pwalking.walking_utils import compare_paths
 
-alphas = [3]
-betas = [4]
-gammas = [0.5,0.7]
-w_locals = [0.5,0.7]
-w_globals = [0.5]
+alphas = [5]
+betas = [15]
+gammas = [0.2]
+w_locals = [0.4]
+w_globals = [0.6]
 
 # alphas = [3]
 # betas = [3]

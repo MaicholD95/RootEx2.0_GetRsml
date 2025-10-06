@@ -211,7 +211,7 @@ def print_graph_on_original_img(name,image_path,graph,sources,tips, saving_path)
 if __name__ == "__main__":
     gt_masks_path = r'C:\Users\maich\Desktop\rootex3\gt_masks'
     skeletons_saving_path = r'C:\Users\maich\Desktop\rootex3\gt_skeleton'
-    gt_json_path = r'C:\Users\maich\Desktop\rootex3\RootEx3.0_GetRsml\test_images'
+    gt_json_path = r'D:\WORK\DATA\root\paper_hard_medium_simple_imgs_rsml\imgs'
     plant_imgs = []
     #read all gt masks
     gt_masks = glob(os.path.join(gt_masks_path, '*.png'))
